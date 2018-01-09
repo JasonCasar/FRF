@@ -15,7 +15,7 @@ time_mcpc = datenum(time_mcpc);
 matched_data_mat = [];
 for i=1:length(members)
     if members(i)==1;
-        matched_data = [time_mcpc(i) xcoord(Loc(i)) aveconc(i) ycoord(Loc(i))];
+        matched_data = [time_mcpc(i) xcoord(Loc(i)) ycoord(Loc(i)) aveconc(i)];
         matched_data_mat = vertcat(matched_data_mat,matched_data);
     end
 end
@@ -45,7 +45,7 @@ for i=1:(length(startIndices)-1)
     j=1;
     for coordinate=minCoord:binWidth:maxCoord
         central_coord(j) = coordinate+(binWidth/2);
-        W{i,j} = find(abs(thisRunCoords-coordinate)<(binWidth/2))+startIndices(i);
+        W{i,j} = find(abs(thisRunCoords-coordinate)<(binWidth/2))+startIndices(i)-1;
         count(i,j) = length(W{i,j});
         j=j+1;
     end

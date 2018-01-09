@@ -8,9 +8,7 @@ function [avr,avm,avb,Y_pred,var_pred,diff,transpose_data] = FixedRankFiltering(
 %data), direction of difference OTHERS
 
 %Should also be testing how well the binning works, and how well the
-%detrending works (could use leave on out method or cross-validation could 
-%work for testing how well the linear regression worked in the detrend
-%function).
+%detrending works (could use leave on out method or cross-validation could work for testing how well the linear regression worked in the )
 
 %Make sure to give credit to Kuztfuss and Cressie for using some of their
 %code, as well as Cressie et al for using FRF algorithm and part of their code
