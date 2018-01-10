@@ -1,39 +1,43 @@
-function [S,eta] = constructBasis1D(central_coord,type,r,resolution,signal)
-   %Need to add functionality for other basis function types and multiple
-   %resolutions. 
+function [S,eta,resolution] = constructBasis1D(central_coord,type,r,resolution,signal)
+    %Need to add functionality for other basis function types
     if type == 'Gaussian' 
-        if resolution == 1
+        len = r*(1-2^resolution)/(-1); %resolution of 3 would be len = r + 2r + 4r
+        while len>length(central_coord)
+           warning('Resolution is being decreased so that the number of basis functions does not exceed the number of bins. Consider decreasing resolution and increasing rank')
+           resolution = resolution-1;
+           len = r*(1-2^resolution)/(-1);
+        end
+        if resolution == 0
+           error('0 Resolution. Program will crash now. r must be at most smaller than numBins.')
+        end
+        S = zeros([length(central_coord) len]);
+        pointer = 1;
+        for res=1:resolution
+            numBasisFunc = r*(2^(res-1));
             minCoord = central_coord(1);
             maxCoord = central_coord(length(central_coord));
             range=maxCoord-minCoord;
-            spacing=ceil(range/r);
+            spacing=ceil(range/numBasisFunc);
             remainder=mod(range,spacing);
-            centers=zeros([1 r]);
+            centers=zeros([1 numBasisFunc]);
             x=minCoord+(remainder/2);
             i=1;
-            while i<=r
+            while i<=numBasisFunc
                 centers(1,i)=x;
                 x=x+spacing;
                 i=i+1;
             end
-            
-            %Adding multiple resolutions would be a simple matter of making
-            %more sigmas and then adding a column to the S matrix for each
-            %of the new basis functions from the new resolutions. 
-            
-            sigma=spacing/2; %might change this
-            distsq=zeros([length(central_coord),r]);
-            for i=1:r
+            sigma=spacing/2; %This is pretty arbitrary
+            distsq=zeros([length(central_coord) numBasisFunc]);
+            for i=1:numBasisFunc
                 distsq(:,i)=(central_coord-centers(i)).^2;
             end
-            S = exp(-0.5*distsq./(sigma^2));
-            eta=S\signal;
-            
-        else
-            print('Currently Only Resolution 1 is Supported At This Point')
+            S_res = exp(-0.5*distsq./(sigma^2));
+            S(:,pointer:(pointer+numBasisFunc-1)) = S_res;
+            pointer = pointer + numBasisFunc;
         end
+        eta = S\signal;
     else
-        print('Currently Only Type Gaussian is Supported At This Point')
-
+        warning('Currently Only Type Gaussian is Supported At This Point')
     end
 end

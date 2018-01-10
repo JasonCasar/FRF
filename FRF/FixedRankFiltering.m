@@ -1,4 +1,4 @@
-function [avr,avm,avb,Y_pred,var_pred,diff,transpose_data] = FixedRankFiltering(nmea_file,mcpc_file,startTimesMat,missing,r,numBins)
+function [avr,avm,avb,Y_pred,var_pred,diff,transpose_data] = FixedRankFiltering(nmea_file,mcpc_file,startTimesMat,missing,r,numBins,resolution)
 %Parameters to test: The time of run, the distribution of the data (ie, are the data points skewed,normal? and does this differ from run to run?)
 %More parameters to test: number of bins, number of missing data points,
 %location of missing data points (ie, was it obscuring a spike), rank, number of resolutions, SNR
@@ -38,11 +38,19 @@ function [avr,avm,avb,Y_pred,var_pred,diff,transpose_data] = FixedRankFiltering(
     %transpose data so that time is rows and coordinate is columns.
     transpose_data = data';
     
-    [S,eta] = constructBasis1D(central_coord,'Gaussian',r,1,transpose_data(:,1));
+    %ISSUE: R is not square (and thus not invertible) if there are more
+    %basis functions than bins. 
+    [S,eta,resolution] = constructBasis1D(central_coord,'Gaussian',r,resolution,transpose_data(:,2));
+    resolution = resolution;
     
-    SNR=5;
+    SNR=100;
     initial_meas_1 = transpose_data(:,1);
     initial_meas_2 = transpose_data(:,2);
+    
+    large_scale_trend=large_scale_trend';
+    transpose_data=transpose_data(:,3:size(transpose_data,2));
+    large_scale_trend=large_scale_trend(:,3:size(large_scale_trend,2));
+    
     N=size(transpose_data,1);
     T=size(transpose_data,2);
     MLvec = 1:T;
@@ -52,12 +60,10 @@ function [avr,avm,avb,Y_pred,var_pred,diff,transpose_data] = FixedRankFiltering(
     end
     MWvec = 0.*(1:T);
     MWvec(MLvec<N) = floor(missing*N); 
-    sigma_1 = (initial_meas_1'*initial_meas_1)/N; %This computes covariance because data is already detrended 
-    sigma_2 = (initial_meas_2'*initial_meas_2)/N;
-    sigmaLag_2 = ((initial_meas_1'*initial_meas_2)/N)';
+    sigma_1 = (initial_meas_1*initial_meas_1')/N; %This computes covariance because data is already detrended 
+    sigma_2 = (initial_meas_2*initial_meas_2')/N;
+    sigmaLag_2 = ((initial_meas_1*initial_meas_2')/N)';
     
-    data=data(3:T,:);
-
     [Q,R]=qr(S,0);
     Kprelim = inv(R)*Q'*sigma_1*Q*(inv(R))';
     %Should make sigma2_eps have to do with SNR
@@ -94,7 +100,10 @@ function [avr,avm,avb,Y_pred,var_pred,diff,transpose_data] = FixedRankFiltering(
     K = K_1; %rxr
     H = H_2; %rxr
     U = U_2; %rxr
-
+    
+    numBasisFunctions = r*(1-2^resolution)/(-1);
+    r=numBasisFunctions;
+    
     eta_t_t=zeros([r T]);
     eta_t_t(:,1)=eta;
     Y_pred = zeros([N T]);
@@ -118,7 +127,7 @@ function [avr,avm,avb,Y_pred,var_pred,diff,transpose_data] = FixedRankFiltering(
         if t==1
             eta_tp_t(:,t)=H*eta_t_t(:,1);
             Ptpt(:,:,t)=H*K*H'+U;
-            for i=1:3 %Allow for convergence
+            for i=1:5 %Allow for convergence
                 G=Ptpt(:,:,t)*St'*((1/Dii).*eye(n)-(Dii^(-2)).*St*inv(inv(Ptpt(:,:,t))+(1/Dii).*St'*St)*St');
                 Ptt(:,:,t)=Ptpt(:,:,t)-G*St*Ptpt(:,:,t);
                 eta_t_t(:,t)=eta_tp_t(:,t)+G*(Z_t-St*eta_tp_t(:,t));
@@ -141,8 +150,8 @@ function [avr,avm,avb,Y_pred,var_pred,diff,transpose_data] = FixedRankFiltering(
                 (sigma2_xi.*M')),N,1);     
             diff(:,t)=Y_pred(:,t)-transpose_data(:,t);
     end
-    Y_pred = (Y_pred'+large_scale_trend)';
-    transpose_data = (transpose_data'+large_scale_trend)';
+    Y_pred = Y_pred+large_scale_trend;
+    transpose_data = transpose_data+large_scale_trend;
     
     [r,m,b]=regression(Y_pred',transpose_data');
     avr = mean(r);
