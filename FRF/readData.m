@@ -1,18 +1,27 @@
 function [xcoord,ycoord,time_nmea,aveconc,time_mcpc] = readData(nmea_file,mcpc_file,startTimesMat)
-%returns an array for the x and y coordinates, an array for concentation 
-%and time arrays for nmea and mcpc.
+    %returns an array for the x and y coordinates, an array for concentation 
+    %and time arrays for nmea and mcpc.
+    %
+    %INPUTS: 
+    %      IMPORTANT: CHANGE dayof, monthof and yearof below
+    %      nmea_file - A text file containing coordinates of measurements
+    %      mcpc_file - The raw text output of the mcpc 
+    %      startTimesMat - Column vector indicating when each time starts
+    %        (includes training sets) 
+    %
+    %OUTPUTS:
+    %      xcoord - array of the x coordinates from nmea
+    %      ycoord - array of the y coordinates from nmea
+    %      time_nmea - array of the times each x,y pair were recorded at
+    %      time_mcpc - array of the times each conc data were recorded at
+    %      aveconc - array of the concentration values from mcpc
+    
 
-%startTimesMat = ['08-Dec-2017 10:37:41';'08-Dec-2017 10:47:44';'08-Dec-2017 10:57:01';'08-Dec-2017 11:06:56';'08-Dec-2017 11:15:56';'08-Dec-2017 11:25:57';'08-Dec-2017 11:35:00'];
-%[xcoord,ycoord,time_nmea,aveconc,time_mcpc] = readData('coordinates.txt','MCPC_171208_102434.txt',startTimesMat);
-%[W,data_detrend,X0,betahat,central_coord,count] = matchBin(50,time_nmea,xcoord,ycoord,time_mcpc,aveconc,startTimesMat);
-
-%startTimesMat = ['08-Dec-2017 14:01:40';'08-Dec-2017 14:13:39';'08-Dec-2017 14:26:47';'08-Dec-2017 14:36:13';'08-Dec-2017 14:47:31';'08-Dec-2017 14:59:23';'08-Dec-2017 15:12:40'];
-%[xcoord,ycoord,time_nmea,aveconc,time_mcpc] = readData('coordinates1.txt','MCPC_171208_135234.txt',startTimesMat);
-%[W,data_detrend,X0,betahat,central_coord,count] = matchBin(50,time_nmea,xcoord,ycoord,time_mcpc,aveconc,startTimesMat);
-
+%%%%% THESE MUST BE CHANGED %%%%
 dayof = 8;
 monthof = 12;
 yearof = 2017;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 fileID = fopen(nmea_file);
 A = textscan(fileID,'%s');

@@ -1,11 +1,34 @@
-function [data_detrend,X0,betahat] = detrend(matched_data_mat,startIndices)
-%detrend all data given complete knowledge of all data. This also
-%eliminates data outside of the start of the first run and the end of the
-%last run.
+function [trend,detrended_data] = detrend(central_coord,data,fullSet,missingStart,missingEnd)
+%detrend current run of data. fullSet is a boolean input indicating whether
+%or not the regression should be performed on the full data set or only a
+%portion of it (ie, the portion where the data are available). 
+%If fullSet is set to false, then missingStart and missingEnd are required.
+%
+%INPUTS:
+%   central_coord: Vector of coordinates representing bin locations. Used
+%       for calculating regression line.
+%   data: The binned concentration measurements
+%   fullSet: Boolean. Are all data available or not?
+%   missingStart: Only necessary paramter if fullSet==false. Tells us which
+%       bins to start removing data at.
+%   missingEnd: Again, only necessary if fullSet==false. Tells us which
+%       bins to stop removing data at. 
+%
+%OUTPUTS:
+%   trend: Vector containing a value for each bin. This is the trend line
+%       calculated from the available data from this time bin.
+%   detrended_data: data-trend
 
-matched_data_mat = matched_data_mat(startIndices(1):startIndices(length(startIndices)),:);
-X0 = [ones(size(matched_data_mat,1),1) matched_data_mat(:,2)];
-betahat = regress(matched_data_mat(:,4),X0);
-data_detrend = horzcat(matched_data_mat,matched_data_mat(:,4)-X0*betahat);
+data_temp = data;
 
+%Make the data that are "removed" NaN
+if fullSet == false ;
+    data_temp(missingStart:missingEnd) = NaN;
+end
+%Perform a linear regression on all AVAILABLE data to generate a trend line
+    X0 = [ones(length(central_coord),1) central_coord];
+    betahat = regress(data_temp',X0);
+    trend=(X0*betahat)';
+%Save that trend and subtract it from the data. 
+    detrended_data = (data-trend)';
 end
